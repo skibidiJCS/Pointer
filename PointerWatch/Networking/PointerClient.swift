@@ -26,6 +26,11 @@ final class PointerClient {
     private var heartbeatTimer: Timer?
     private var lastPong = Date()
 
+    private enum Heartbeat {
+        static let interval: TimeInterval = 5
+        static let timeout: TimeInterval = 15
+    }
+
     init(identity: PeerHello) {
         self.identity = identity
     }
@@ -112,12 +117,15 @@ final class PointerClient {
     private func startHeartbeat() {
         stopHeartbeat()
         lastPong = Date()
-        let timer = Timer(timeInterval: 2, repeats: true) { [weak self] _ in
+        let timer = Timer(
+            timeInterval: Heartbeat.interval,
+            repeats: true
+        ) { [weak self] _ in
             DispatchQueue.main.async {
                 guard let self else {
                     return
                 }
-                if Date().timeIntervalSince(self.lastPong) > 6 {
+                if Date().timeIntervalSince(self.lastPong) > Heartbeat.timeout {
                     self.state = .failed("Connection lost")
                     self.disconnectSession()
                     return
@@ -126,6 +134,7 @@ final class PointerClient {
                 self.session?.send(.ping(sequence: self.sequence))
             }
         }
+        timer.tolerance = 1
         heartbeatTimer = timer
         RunLoop.main.add(timer, forMode: .common)
     }

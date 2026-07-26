@@ -5,8 +5,8 @@ enum PointerNetworkParameters {
         let tcp = NWProtocolTCP.Options()
         tcp.noDelay = true
         tcp.enableKeepalive = true
-        tcp.keepaliveIdle = 2
-        tcp.keepaliveInterval = 1
+        tcp.keepaliveIdle = 10
+        tcp.keepaliveInterval = 3
         tcp.keepaliveCount = 3
 
         let parameters = NWParameters(tls: nil, tcp: tcp)

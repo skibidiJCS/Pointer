@@ -8,15 +8,8 @@ struct TrackpadView: View {
 
     var body: some View {
         ZStack {
-            LinearGradient(
-                colors: [
-                    Color.accentColor.opacity(0.34),
-                    Color.black.opacity(0.08)
-                ],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-            .ignoresSafeArea()
+            TrackpadBackground()
+                .ignoresSafeArea()
 
             Color.clear
                 .contentShape(Rectangle())
@@ -43,8 +36,8 @@ struct TrackpadView: View {
                     } label: {
                         Image(systemName: "xmark")
                             .font(.caption2.bold())
-                            .frame(width: 26, height: 26)
-                            .background(.black.opacity(0.28), in: Circle())
+                            .frame(width: 28, height: 28)
+                            .background(.black.opacity(0.32), in: Circle())
                     }
                     .buttonStyle(.plain)
                     .accessibilityLabel("Disconnect")
@@ -62,7 +55,7 @@ struct TrackpadView: View {
                     Text("tap to click")
                         .font(.caption2)
                 }
-                .foregroundStyle(.secondary)
+                .foregroundStyle(.white.opacity(0.68))
                 .allowsHitTesting(false)
 
                 Spacer()

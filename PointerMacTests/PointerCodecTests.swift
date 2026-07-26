@@ -12,6 +12,16 @@ final class PointerCodecTests: XCTestCase {
         XCTAssertEqual(decoded, message)
     }
 
+    func testInputPacketsStayCompact() {
+        let motion = PointerCodec.encode(
+            .motion(sequence: 1, deltaX: 2, deltaY: 3)
+        )
+        let click = PointerCodec.encode(.click(sequence: 2))
+
+        XCTAssertEqual(motion.count, 18)
+        XCTAssertEqual(click.count, 10)
+    }
+
     func testChunkedFrames() throws {
         let first = PointerCodec.encode(.click(sequence: 4))
         let second = PointerCodec.encode(.ping(sequence: 5))
