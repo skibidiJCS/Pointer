@@ -109,7 +109,11 @@ final class WatchAppModel: ObservableObject {
         }
         reconnectWorkItem?.cancel()
         let workItem = DispatchWorkItem { [weak self] in
-            self?.attemptAutomaticReconnect()
+            guard let self else {
+                return
+            }
+            self.browser.start()
+            self.attemptAutomaticReconnect()
         }
         reconnectWorkItem = workItem
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.5, execute: workItem)

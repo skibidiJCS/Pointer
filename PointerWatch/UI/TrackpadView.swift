@@ -4,23 +4,27 @@ struct TrackpadView: View {
     @ObservedObject var model: WatchAppModel
     let mac: PeerHello
 
-    @State private var lastLocation: CGPoint?
-    @State private var gestureStart: Date?
-    @State private var traveledDistance = 0.0
+    @State private var gestureInterpreter = TrackpadGestureInterpreter()
 
     var body: some View {
-        GeometryReader { proxy in
-            ZStack {
-                LinearGradient(
-                    colors: [
-                        Color.accentColor.opacity(0.34),
-                        Color.black.opacity(0.08)
-                    ],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
+        ZStack {
+            LinearGradient(
+                colors: [
+                    Color.accentColor.opacity(0.34),
+                    Color.black.opacity(0.08)
+                ],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+            .ignoresSafeArea()
 
-                VStack {
+            Color.clear
+                .contentShape(Rectangle())
+                .ignoresSafeArea()
+                .gesture(trackpadGesture)
+
+            VStack(spacing: 0) {
+                HStack(spacing: 6) {
                     HStack(spacing: 5) {
                         Circle()
                             .fill(.green)
@@ -28,74 +32,60 @@ struct TrackpadView: View {
                         Text(mac.name)
                             .font(.caption2.weight(.medium))
                             .lineLimit(1)
-                        Spacer()
-                        Button {
-                            model.disconnect()
-                        } label: {
-                            Image(systemName: "xmark")
-                                .font(.caption2.bold())
-                        }
-                        .buttonStyle(.plain)
+                            .minimumScaleFactor(0.75)
                     }
-                    .padding(.horizontal, 10)
-                    .padding(.top, 7)
+                    .allowsHitTesting(false)
 
-                    Spacer()
+                    Spacer(minLength: 6)
 
-                    Image(systemName: "hand.draw")
-                        .font(.system(size: 27, weight: .light))
-                        .foregroundStyle(.secondary)
-                    Text("Drag to move · Tap to click")
-                        .font(.system(size: 9, weight: .medium))
-                        .foregroundStyle(.secondary)
-
-                    Spacer()
+                    Button {
+                        model.disconnect()
+                    } label: {
+                        Image(systemName: "xmark")
+                            .font(.caption2.bold())
+                            .frame(width: 26, height: 26)
+                            .background(.black.opacity(0.28), in: Circle())
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("Disconnect")
                 }
+                .padding(.horizontal, 9)
+                .padding(.top, 2)
+
+                Spacer()
+
+                VStack(spacing: 5) {
+                    Image(systemName: "hand.draw")
+                        .font(.system(size: 25, weight: .light))
+                    Text("drag to move")
+                        .font(.caption2.weight(.semibold))
+                    Text("tap to click")
+                        .font(.caption2)
+                }
+                .foregroundStyle(.secondary)
+                .allowsHitTesting(false)
+
+                Spacer()
             }
-            .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
-            .contentShape(Rectangle())
-            .gesture(trackpadGesture, including: .gesture)
-            .frame(width: proxy.size.width, height: proxy.size.height)
         }
-        .ignoresSafeArea()
     }
 
     private var trackpadGesture: some Gesture {
         DragGesture(minimumDistance: 0, coordinateSpace: .local)
             .onChanged { value in
-                if gestureStart == nil {
-                    gestureStart = Date()
-                    lastLocation = value.location
-                    traveledDistance = 0
-                    return
-                }
-
-                guard let lastLocation else {
-                    self.lastLocation = value.location
-                    return
-                }
-
-                let deltaX = value.location.x - lastLocation.x
-                let deltaY = value.location.y - lastLocation.y
-                traveledDistance += hypot(deltaX, deltaY)
-                self.lastLocation = value.location
-
-                if deltaX != 0 || deltaY != 0 {
-                    model.sendMotion(deltaX: deltaX, deltaY: deltaY)
+                if let delta = gestureInterpreter.update(
+                    location: value.location,
+                    timestamp: ProcessInfo.processInfo.systemUptime
+                ) {
+                    model.sendMotion(deltaX: delta.x, deltaY: delta.y)
                 }
             }
             .onEnded { _ in
-                let duration = Date().timeIntervalSince(gestureStart ?? Date())
-                if duration < 0.35 && traveledDistance < 10 {
+                if gestureInterpreter.end(
+                    timestamp: ProcessInfo.processInfo.systemUptime
+                ) {
                     model.click()
                 }
-                resetGesture()
             }
-    }
-
-    private func resetGesture() {
-        lastLocation = nil
-        gestureStart = nil
-        traveledDistance = 0
     }
 }
